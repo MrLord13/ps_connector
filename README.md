@@ -42,3 +42,28 @@ Selector Connector** — nothing is hard-coded in the module.
    click **Send to Product Selector**.
 4. Check the test service's console output (and `GET /api/opportunity/log`)
    to confirm the payload and token arrived as expected.
+
+
+## For Test Space
+### Configure Ps Connector In Settings Page
+1. Protocol > Http
+2. Service Host > localhost
+3. Service Port > 3000
+4. API Endpoint > /api/opportunity
+5. Request Timeout (seconds) > 10
+6. Shared Secret > secret-123 (Optional SecretKey)
+7. Token Validity (minutes) > 15
+
+### Start NPM With Command 
+$env:ODOO_BASE_URL="http://localhost:8069"; $env:PORT="3000"; npm start
+OR
+npm start
+
+### Test opportunity In Odoo
+1. Go To CRM Module
+2. Open Random Record
+3. Click Send To Product Selector On Statusbar 
+4. You will see a success message if the connection was established correctly.
+
+### See Logs In This Page 
+http://localhost:3000/api/opportunity/log
