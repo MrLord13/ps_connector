@@ -25,7 +25,7 @@ class CrmLead(models.Model):
         if not host:
             raise UserError(_(
                 'The Product Selector service is not configured yet. '
-                'Go to Settings > CRM > Product Selector Connector and set the service host.'
+                'Go to Settings > Product Selector Connector and set the service host.'
             ))
 
         try:
@@ -33,7 +33,7 @@ class CrmLead(models.Model):
         except ValueError:
             raise UserError(_(
                 'The Product Selector service is not configured yet. '
-                'Go to Settings > CRM > Product Selector Connector and set the shared secret.'
+                'Go to Settings > Product Selector Connector and set the shared secret.'
             ))
 
         port_part = f':{int(port)}' if port else ''

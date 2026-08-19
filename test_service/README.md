@@ -16,7 +16,7 @@ ODOO_BASE_URL=http://localhost:8069 PORT=3000 npm start
 
 ## Configure Odoo
 
-In Odoo, go to **Settings > CRM > Product Selector Connector** and set:
+In Odoo, go to **Settings > Product Selector Connector** (under the main Settings menu) and set:
 
 | Field           | Value                     |
 |-----------------|---------------------------|

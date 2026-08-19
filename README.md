@@ -3,9 +3,10 @@ Product Selector Connector With Odoo (Pars Jahd Service)
 
 ## What's in this repo
 
-- `ps_connector/` — Odoo 19 (Enterprise) addon. Adds a **Send to Product
-  Selector** button on the CRM Opportunity form. Clicking it sends, over
-  HTTP, to the external Product Selector service:
+This repository *is* the Odoo 19 (Enterprise) addon — `__manifest__.py`
+sits at the repo root, alongside `models/`, `views/`, `controllers/`. It
+adds a **Send to Product Selector** button on the CRM Opportunity form.
+Clicking it sends, over HTTP, to the external Product Selector service:
   - A signed token identifying the currently logged in Odoo user
     (`Authorization: Bearer <token>` header), so the external service knows
     which user triggered the action and can resume the flow without a new
@@ -14,9 +15,9 @@ Product Selector Connector With Odoo (Pars Jahd Service)
   - The opportunity's customer data: name, type (company/individual),
     phone, address.
 
-  The external service's protocol/host/port/path, request timeout, signing
-  secret and token lifetime are all configured from **Settings > CRM >
-  Product Selector Connector** — nothing is hard-coded in the module.
+The external service's protocol/host/port/path, request timeout, signing
+secret and token lifetime are all configured from **Settings > Product
+Selector Connector** — nothing is hard-coded in the module.
 
 - `test_service/` — a minimal Node.js/Express server that mimics the
   Product Selector service, used to verify that Odoo sends the data
@@ -24,12 +25,13 @@ Product Selector Connector With Odoo (Pars Jahd Service)
 
 ## Install the addon
 
-1. Copy (or symlink) the `ps_connector/` folder into your Odoo `addons`
-   path.
+1. Copy (or clone) this repository into your Odoo `addons` path, as a
+   folder named `ps_connector` (e.g. `custom/ps_connector/`), so that
+   `custom/ps_connector/__manifest__.py` exists.
 2. Restart Odoo, then go to **Apps**, remove the "Apps" filter, search for
    "Product Selector Connector" and install it (it depends on `crm`).
-3. Configure the external service under **Settings > CRM > Product
-   Selector Connector**.
+3. Configure the external service under **Settings > Product Selector
+   Connector**.
 
 ## Quick end-to-end test
 

@@ -15,7 +15,7 @@ Clicking it sends, as an HTTP request to an external service:
   phone and address.
 
 The external service URL (protocol, host, port, endpoint) and the
-signing secret are configurable from Settings > CRM > Product Selector
+signing secret are configurable from Settings > Product Selector
 Connector, nothing is hard-coded.
 
 A minimal Node.js test service is provided under test_service/ in the
