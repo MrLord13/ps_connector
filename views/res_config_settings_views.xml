@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_ps_connector" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ps.connector</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <div class="app_settings_block"
+                     data-string="Product Selector"
+                     string="Product Selector"
+                     data-key="ps_connector"
+                     groups="base.group_system">
+                    <h2>Product Selector Connector</h2>
+                    <div class="row mt16 o_settings_container" name="ps_connector_setting_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="ps_connector_host" string="External Service"/>
+                                <div class="text-muted">
+                                    Address of the external Product Selector service that
+                                    receives opportunity data from the "Send to Product
+                                    Selector" button
+                                </div>
+                                <div class="content-group">
+                                    <div class="row mt8">
+                                        <label for="ps_connector_protocol" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_protocol" class="col-3"/>
+                                    </div>
+                                    <div class="row mt4">
+                                        <label for="ps_connector_host" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_host" class="col-9 col-lg-4"
+                                               placeholder="product-selector.example.com"/>
+                                    </div>
+                                    <div class="row mt4">
+                                        <label for="ps_connector_port" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_port" class="col-3"/>
+                                    </div>
+                                    <div class="row mt4">
+                                        <label for="ps_connector_endpoint" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_endpoint" class="col-9 col-lg-4"/>
+                                    </div>
+                                    <div class="row mt4">
+                                        <label for="ps_connector_timeout" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_timeout" class="col-3"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="ps_connector_shared_secret" string="Authentication"/>
+                                <div class="text-muted">
+                                    Secret used to sign the token that identifies the logged
+                                    in Odoo user. Configure the exact same value on the
+                                    external service, or have it call this Odoo instance's
+                                    /ps_connector/api/validate_token endpoint to resolve the
+                                    token
+                                </div>
+                                <div class="content-group">
+                                    <div class="row mt8">
+                                        <label for="ps_connector_shared_secret" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_shared_secret" password="True" class="col-9 col-lg-4"/>
+                                    </div>
+                                    <div class="row mt4">
+                                        <label for="ps_connector_token_expiry" class="col-3 col-lg-2"/>
+                                        <field name="ps_connector_token_expiry" class="col-3"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

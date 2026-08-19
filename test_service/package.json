@@ -1,0 +1,16 @@
+{
+  "name": "ps-connector-test-service",
+  "version": "1.0.0",
+  "description": "Minimal mock of the Product Selector service, used to verify that the ps_connector Odoo module sends opportunity data correctly.",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
