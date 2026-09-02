@@ -6,33 +6,49 @@ Product Selector Connector
 ===========================
 Adds a "Send to Product Selector" button on the CRM opportunity form.
 
-Clicking it sends, as an HTTP request to an external service:
+Clicking it posts a ``multipart/form-data`` request to the Product Selector
+service (``/api/odoo/inquiries/store`` by default) containing the four blocks
+of the published API specification:
 
-* A signed token identifying the currently logged in Odoo user, so the
-  external service can tell which user triggered the action and continue
-  the flow without asking for a new login.
-* The opportunity's customer data: name, type (company/individual),
-  phone and address.
+* ``customer`` - company name, logo, email, phone, fax, address, country,
+  state, city and the array of contact persons (name, family, mobile, fax,
+  ext, position, title).
+* ``inquiry``  - project name and description, reference number, version,
+  file names, inquiry text, inquiry date, currency, end user and project
+  location.
+* ``engineer`` - full name, avatar file name, phone and email of the Odoo
+  user in charge.
+* ``files``    - every attachment of the opportunity, plus the engineer
+  avatar.
+* ``token``    - a signed token identifying the Odoo user, so the external
+  service can continue the flow without asking for a new login.
 
-The external service URL (protocol, host, port, endpoint) and the
-signing secret are configurable from Settings > Product Selector
-Connector, nothing is hard-coded.
+On success the service answers ``{ok, message, data: {url, uuid}}``; the
+inquiry UUID and panel URL are stored on the opportunity and the panel can
+be opened straight from the form.
 
-A minimal Node.js test service is provided under test_service/ in the
-repository to verify that the data is sent and received correctly.
+The service URL (protocol, host, port, endpoint) and the signing secret are
+configurable from Settings > Product Selector Connector, nothing is
+hard-coded.
+
+A Node.js test service is provided under test_service/ in the repository; it
+parses the multipart body, validates every field against the specification
+and answers with the documented response shape.
 """,
-    'version': '19.0.1.0.0',
+    'version': '19.0.2.0.0',
     'category': 'ERPishro Modules',
     'author': 'AliReza Nemati',
-    'license': 'LGPL-3',
     'depends': ['crm'],
     'data': [
         'views/crm_lead_views.xml',
+        'views/res_partner_views.xml',
         'views/res_config_settings_views.xml',
     ],
     'external_dependencies': {
         'python': ['requests'],
     },
     'installable': True,
-    'application': False,
+    'auto_install': False,
+    'application': True,
+    'license': 'OPL-1',
 }

@@ -8,7 +8,7 @@
                 <sheet>
                     <group string="External Service">
                         <field name="ps_connector_protocol"/>
-                        <field name="ps_connector_host" placeholder="product-selector.example.com"/>
+                        <field name="ps_connector_host" placeholder="46.209.99.90"/>
                         <field name="ps_connector_port"/>
                         <field name="ps_connector_endpoint"/>
                         <field name="ps_connector_timeout"/>
@@ -16,6 +16,13 @@
                     <group string="Authentication">
                         <field name="ps_connector_shared_secret" password="True"/>
                         <field name="ps_connector_token_expiry"/>
+                    </group>
+                    <group string="Payload">
+                        <field name="ps_connector_payload_style"/>
+                        <field name="ps_connector_default_version"/>
+                        <field name="ps_connector_default_currency"/>
+                        <field name="ps_connector_strict_validation"/>
+                        <field name="ps_connector_open_panel_url"/>
                     </group>
                 </sheet>
                 <footer>

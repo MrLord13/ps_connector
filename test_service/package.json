@@ -1,14 +1,15 @@
 {
   "name": "ps-connector-test-service",
-  "version": "1.0.0",
-  "description": "Minimal mock of the Product Selector service, used to verify that the ps_connector Odoo module sends opportunity data correctly.",
+  "version": "2.0.0",
+  "description": "Mock of the Product Selector API (multipart/form-data, /api/odoo/inquiries/store) used to verify that the ps_connector Odoo module sends inquiries correctly.",
   "private": true,
   "main": "server.js",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "selftest": "python selftest.py"
   },
   "dependencies": {
     "express": "^4.19.2"

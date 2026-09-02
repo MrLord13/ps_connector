@@ -5,14 +5,53 @@
         <field name="model">crm.lead</field>
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
+
             <xpath expr="//header" position="inside">
                 <button name="action_send_to_ps_connector"
                         type="object"
                         string="Send to Product Selector"
                         class="btn-secondary"
                         invisible="type != 'opportunity'"
-                        confirm="Send this opportunity's customer data to the Product Selector service?"/>
+                        confirm="Send this opportunity to the Product Selector service?"/>
+                <button name="action_open_ps_panel"
+                        type="object"
+                        string="Open Product Selector Panel"
+                        class="btn-secondary"
+                        invisible="not ps_panel_url"/>
             </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Product Selector" name="ps_connector">
+                    <group>
+                        <group string="Inquiry">
+                            <field name="ps_ref_number"/>
+                            <field name="ps_version"/>
+                            <field name="ps_inquiry_date"/>
+                            <field name="ps_currency"/>
+                            <field name="ps_end_user"/>
+                            <field name="ps_project_location"/>
+                        </group>
+                        <group string="Customer &amp; Engineer">
+                            <field name="ps_company_fax"/>
+                            <field name="ps_engineer_user_id"/>
+                        </group>
+                    </group>
+                    <group string="Inquiry Text">
+                        <field name="ps_inquiry_text" nolabel="1"
+                               placeholder="Internal description about this inquiry..."/>
+                    </group>
+                    <group string="Files">
+                        <field name="ps_attachment_ids" nolabel="1" widget="many2many_binary"
+                               help="Leave empty to send every attachment linked to this opportunity."/>
+                    </group>
+                    <group string="Last Result" invisible="not ps_last_sent_on">
+                        <field name="ps_last_sent_on"/>
+                        <field name="ps_inquiry_uuid"/>
+                        <field name="ps_panel_url" widget="url"/>
+                    </group>
+                </page>
+            </xpath>
+
         </field>
     </record>
 </odoo>
