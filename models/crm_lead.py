@@ -10,6 +10,7 @@ from odoo.tools import html2plaintext
 
 from .ps_connector_utils import (
     PS_CURRENCIES,
+    PS_ROLES,
     build_multipart_parts,
     clip,
     generate_user_token,
@@ -274,6 +275,21 @@ class CrmLead(models.Model):
             'email': clip(user.email or user.login, 'engineer.email'),
         }
 
+    def _ps_prepare_user(self, user):
+        """Identity of the Odoo user who triggered the action.
+
+        The Product Selector service uses this block to authorise the caller,
+        so it carries the full name, the email address and the role, spelled
+        exactly the way the remote service knows it.
+        """
+        self.ensure_one()
+        identity = user._ps_identity()
+        return {
+            'fullName': clip(identity['fullName'], 'user.fullName'),
+            'email': clip(identity['email'], 'user.email'),
+            'role': identity['role'] or '',
+        }
+
     def _ps_get_attachments(self):
         """Attachments sent in ``files``."""
         self.ensure_one()
@@ -308,6 +324,7 @@ class CrmLead(models.Model):
         customer = payload['customer']
         inquiry = payload['inquiry']
         engineer = payload['engineer']
+        user = payload['user']
 
         required_customer = {
             'company': _('Customer > Company Name'),
@@ -364,6 +381,22 @@ class CrmLead(models.Model):
         elif not is_valid_email(engineer['email']):
             problems.append(_('Engineer > Email (invalid format: %s)', engineer['email']))
 
+        if not user.get('fullName'):
+            problems.append(_('Odoo User > Full Name'))
+        if not user.get('email'):
+            problems.append(_('Odoo User > Email'))
+        elif not is_valid_email(user['email']):
+            problems.append(_('Odoo User > Email (invalid format: %s)', user['email']))
+        allowed_roles = [code for code, _label in PS_ROLES]
+        if not user.get('role'):
+            problems.append(_(
+                'Odoo User > Product Selector Role (set it on the user form, '
+                'Settings > Users)'))
+        elif user['role'] not in allowed_roles:
+            problems.append(_(
+                'Odoo User > Product Selector Role ("%(role)s" is not one of: %(allowed)s)',
+                role=user['role'], allowed=', '.join(allowed_roles)))
+
         return problems
 
     # ------------------------------------------------------------------
@@ -383,6 +416,7 @@ class CrmLead(models.Model):
             'payload_style': icp.get_param('ps_connector.payload_style', 'brackets') or 'brackets',
             'strict': icp.get_param('ps_connector.strict_validation', 'True') not in ('False', 'false', '0', ''),
             'open_panel': icp.get_param('ps_connector.open_panel_url', 'True') not in ('False', 'false', '0', ''),
+            'user_block_key': icp.get_param('ps_connector.user_block_key', 'user') or 'user',
         }
 
     def _ps_collect_files(self, attachments, engineer_avatar, avatar_name):
@@ -431,6 +465,7 @@ class CrmLead(models.Model):
             'customer': self._ps_prepare_customer(),
             'inquiry': self._ps_prepare_inquiry(file_names),
             'engineer': self._ps_prepare_engineer(engineer_user),
+            'user': self._ps_prepare_user(self.env.user),
         }
 
         problems = self._ps_validate_payload(payload)
@@ -448,6 +483,11 @@ class CrmLead(models.Model):
         logo = self._ps_get_customer_logo()
         if logo:
             logo = base64.b64decode(logo)
+
+        # The specification does not name this block; the key is configurable
+        # so it can be aligned with whatever the service expects.
+        if settings['user_block_key'] != 'user':
+            payload[settings['user_block_key']] = payload.pop('user')
 
         file_tuples = self._ps_collect_files(attachments, engineer_avatar, avatar_name)
         parts = build_multipart_parts(

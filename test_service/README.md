@@ -9,14 +9,18 @@ It implements the contract described in `Fields.ods`:
 |---|---|
 | URL | `POST /api/odoo/inquiries/store` |
 | Content-Type | `multipart/form-data` |
-| Body | `customer`, `inquiry`, `engineer`, `files`, `token` |
+| Body | `customer`, `inquiry`, `engineer`, `user`, `files`, `token` |
 | Response | `{ ok, message, data: { url, uuid } }` / `{ ok: false, message, code, error }` |
 
 The service parses the multipart body itself (no `multer` / `busboy` needed),
 rebuilds the nested `customer[persons][0][name]` keys with `qs`, then checks
 **every** field against the specification: required, maximum length, enum
-values (`title`, `currency`), email format, date format, and whether each
-name listed in `inquiry.fileNames` really has a matching part in `files[]`.
+values (`title`, `currency`, `user.role`), email format, date format, and
+whether each name listed in `inquiry.fileNames` really has a matching part in
+`files[]`.
+
+Recognised roles: `Sales Engineer 1`, `Sales Manager`, `Sales Secretary`,
+`Commercial Manager`, `Production Manager`, `Warehouse Officer`.
 
 ## Run it
 
@@ -43,6 +47,7 @@ $env:ODOO_BASE_URL="http://localhost:8069"; $env:PORT="3000"; npm start
 | `ODOO_BASE_URL` | – | Odoo instance used to resolve the token into a user |
 | `PANEL_BASE_URL` | `http://localhost:$PORT/panel` | Prefix of the `data.url` returned to Odoo |
 | `STRICT` | `1` | Set to `0` to log validation problems but still answer `ok: true` |
+| `USER_BLOCK` | `user` | Name of the block carrying the Odoo user identity; must match *User Block Name* in Odoo |
 
 ## Routes
 
@@ -67,6 +72,8 @@ $env:ODOO_BASE_URL="http://localhost:8069"; $env:PORT="3000"; npm start
 | Shared Secret | any value, e.g. `secret-123` |
 | Token Validity | `15` |
 | Nested Object Encoding | `Bracket notation` |
+| Default User Role | e.g. `Sales Engineer 1` |
+| User Block Name | `user` |
 | Block Incomplete Inquiries | ✔ |
 | Open Panel After Sending | ✔ |
 
@@ -89,15 +96,16 @@ PAYLOAD_STYLE=json python3 selftest.py    # test the JSON-string encoding
 It runs two cases:
 
 1. a complete inquiry — must be **accepted** with a `uuid` and a panel URL;
-2. an inquiry with six deliberate mistakes (bad email, empty required fax,
+2. an inquiry with seven deliberate mistakes (bad email, empty required fax,
    title outside the enum, currency outside the enum, over-long version,
-   wrong date format) — must be **rejected** with those six problems listed.
+   wrong date format, unknown user role) — must be **rejected** with those
+   seven problems listed.
 
 Expected output:
 
 ```
 RESULT: PASS — the service accepted the inquiry and returned a panel URL.
-RESULT: PASS — the service caught 6 problem(s).
+RESULT: PASS — the service caught 7 problem(s).
 SELF TEST PASSED — the module encoder and the test service agree.
 ```
 
@@ -145,6 +153,9 @@ engineer[fullName]               = AliReza Nemati
 engineer[avatarName]             = alireza_nemati_2_avatar.png
 engineer[phone]                  = +989121234567
 engineer[email]                  = alireza@erpishro.com
+user[fullName]                   = AliReza Nemati
+user[email]                      = alireza@erpishro.com
+user[role]                       = Sales Manager
 files[]                          = <file: specification.pdf>
 files[]                          = <file: alireza_nemati_2_avatar.png>
 ```

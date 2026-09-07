@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
 
-from .ps_connector_utils import PS_CURRENCIES
+from .ps_connector_utils import PS_CURRENCIES, PS_ROLES
 
 
 class ResConfigSettings(models.TransientModel):
@@ -75,6 +75,22 @@ class ResConfigSettings(models.TransientModel):
         string='Default Inquiry Currency',
         config_parameter='ps_connector.default_currency',
         default='USD',
+    )
+    ps_connector_default_role = fields.Selection(
+        PS_ROLES,
+        string='Default User Role',
+        config_parameter='ps_connector.default_role',
+        default='Sales Engineer 1',
+        help='Role assigned to users that have no Product Selector Role set on their '
+             'user form. The value is sent verbatim to the remote service.',
+    )
+    ps_connector_user_block_key = fields.Char(
+        string='User Block Name',
+        config_parameter='ps_connector.user_block_key',
+        default='user',
+        help='Name of the multipart field carrying the logged in user identity '
+             '(full name, email, role). Change it if the Product Selector service '
+             'expects another name, e.g. "auth" or "odooUser".',
     )
     ps_connector_strict_validation = fields.Boolean(
         string='Block Incomplete Inquiries',

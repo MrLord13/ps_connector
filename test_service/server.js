@@ -42,6 +42,18 @@ const received = [];
 
 const TITLES = ['Mr', 'Mrs', 'Miss', 'Ms'];
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'IRR', 'CNY', 'MYR'];
+// Roles the Product Selector service knows; sent verbatim by Odoo.
+const ROLES = [
+  'Sales Engineer 1',
+  'Sales Manager',
+  'Sales Secretary',
+  'Commercial Manager',
+  'Production Manager',
+  'Warehouse Officer',
+];
+// Name of the block carrying the logged in Odoo user identity. Must match
+// "User Block Name" in the Odoo settings.
+const USER_BLOCK = process.env.USER_BLOCK || 'user';
 
 // [required, maxLength|null, kind]
 const CUSTOMER_SPEC = {
@@ -82,6 +94,14 @@ const ENGINEER_SPEC = {
   avatarName: [true, null, 'string'],
   phone: [true, 15, 'string'],
   email: [true, 256, 'email'],
+};
+
+// Identity of the logged in Odoo user, used by the service to authorise
+// the caller (full name + email + role).
+const USER_SPEC = {
+  fullName: [true, 256, 'string'],
+  email: [true, 256, 'email'],
+  role: [true, null, 'enum:role'],
 };
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -182,7 +202,7 @@ function buildBody(parts) {
 
   // The Odoo module can also send the three blocks as JSON strings
   // (Settings > Nested Object Encoding = "JSON strings").
-  ['customer', 'inquiry', 'engineer'].forEach((key) => {
+  ['customer', 'inquiry', 'engineer', USER_BLOCK].forEach((key) => {
     if (typeof fields[key] === 'string') {
       try {
         fields[key] = JSON.parse(fields[key]);
@@ -227,6 +247,9 @@ function checkBlock(spec, block, path, problems) {
     if (kind === 'enum:currency' && !CURRENCIES.includes(value)) {
       problems.push(`${path}.${field}: "${value}" not in [${CURRENCIES.join(', ')}]`);
     }
+    if (kind === 'enum:role' && !ROLES.includes(value)) {
+      problems.push(`${path}.${field}: "${value}" not in [${ROLES.join(' | ')}]`);
+    }
   });
 }
 
@@ -256,6 +279,7 @@ function validate(fields, files) {
   }
 
   checkBlock(ENGINEER_SPEC, engineer, 'engineer', problems);
+  checkBlock(USER_SPEC, fields[USER_BLOCK], USER_BLOCK, problems);
 
   const uploaded = files.filter((file) => file.field !== 'customer[logo]');
   if (Array.isArray(fileNames)) {
@@ -317,6 +341,8 @@ function report(fields, files, problems, odooUser) {
   console.log(JSON.stringify(inquiry, null, 2));
   console.log('--- engineer ---');
   console.log(JSON.stringify(engineer, null, 2));
+  console.log(`--- ${USER_BLOCK} (logged in Odoo user) ---`);
+  console.log(JSON.stringify(fields[USER_BLOCK] || {}, null, 2));
   console.log('--- files ---');
   if (!files.length) {
     console.log('  (none)');
@@ -429,6 +455,7 @@ if (require.main === module) {
     console.log(`Product Selector test service listening on port ${PORT}`);
     console.log(`Endpoint: POST ${ENDPOINT}`);
     console.log(`Strict validation: ${STRICT ? 'on' : 'off'}`);
+    console.log(`User block name: ${USER_BLOCK}`);
     if (ODOO_BASE_URL) {
       console.log(`Will validate tokens against ${ODOO_BASE_URL}`);
     } else {

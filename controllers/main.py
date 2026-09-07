@@ -38,7 +38,12 @@ class PSConnectorController(http.Controller):
                             'id': user.id,
                             'login': user.login,
                             'name': user.name,
-                            'email': user.email,
+                            # Same identity as the ``user`` block of the
+                            # inquiry, so the service can authorise the
+                            # caller from the token alone.
+                            'fullName': user.name,
+                            'email': user.email or user.login,
+                            'role': user.ps_role or payload.get('role') or '',
                         },
                         'expires_at': payload.get('exp'),
                     }

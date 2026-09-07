@@ -18,6 +18,8 @@ of the published API specification:
   location.
 * ``engineer`` - full name, avatar file name, phone and email of the Odoo
   user in charge.
+* ``user``     - full name, email and Product Selector role of the logged in
+  Odoo user, which is what the remote service uses to authorise the caller.
 * ``files``    - every attachment of the opportunity, plus the engineer
   avatar.
 * ``token``    - a signed token identifying the Odoo user, so the external
@@ -35,13 +37,14 @@ A Node.js test service is provided under test_service/ in the repository; it
 parses the multipart body, validates every field against the specification
 and answers with the documented response shape.
 """,
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'category': 'ERPishro Modules',
     'author': 'AliReza Nemati',
     'depends': ['crm'],
     'data': [
         'views/crm_lead_views.xml',
         'views/res_partner_views.xml',
+        'views/res_users_views.xml',
         'views/res_config_settings_views.xml',
     ],
     'external_dependencies': {

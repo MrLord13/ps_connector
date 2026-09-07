@@ -36,6 +36,17 @@ PS_CURRENCIES = [
     ('MYR', 'MYR'),
 ]
 
+#: Roles recognised by the Product Selector service. The label is sent
+#: verbatim, so the technical value and the label are kept identical.
+PS_ROLES = [
+    ('Sales Engineer 1', 'Sales Engineer 1'),
+    ('Sales Manager', 'Sales Manager'),
+    ('Sales Secretary', 'Sales Secretary'),
+    ('Commercial Manager', 'Commercial Manager'),
+    ('Production Manager', 'Production Manager'),
+    ('Warehouse Officer', 'Warehouse Officer'),
+]
+
 #: Maximum length accepted by the remote service, per field path.
 PS_MAX_LENGTHS = {
     'customer.company': 256,
@@ -62,6 +73,8 @@ PS_MAX_LENGTHS = {
     'engineer.fullName': 256,
     'engineer.phone': 15,
     'engineer.email': 256,
+    'user.fullName': 256,
+    'user.email': 256,
 }
 
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -78,6 +91,20 @@ def _b64url_encode(data: bytes) -> str:
 def _b64url_decode(data: str) -> bytes:
     padding = '=' * (-len(data) % 4)
     return base64.urlsafe_b64decode(data + padding)
+
+
+def user_role(user):
+    """Role of ``user`` as the Product Selector service expects it."""
+    role = getattr(user, 'ps_role', False)
+    if role:
+        return role
+    default_role = env_default_role(user.env)
+    return default_role
+
+
+def env_default_role(env):
+    return env['ir.config_parameter'].sudo().get_param(
+        'ps_connector.default_role', 'Sales Engineer 1') or 'Sales Engineer 1'
 
 
 def generate_user_token(env, user, expiry_minutes=None, secret=None):
@@ -101,6 +128,9 @@ def generate_user_token(env, user, expiry_minutes=None, secret=None):
         'uid': user.id,
         'login': user.login,
         'name': user.name,
+        'fullName': user.name,
+        'email': user.email or user.login,
+        'role': user_role(user),
         'iat': now,
         'exp': now + expiry_minutes * 60,
     }
@@ -208,7 +238,9 @@ def flatten_for_multipart(value, prefix=''):
 def build_multipart_parts(payload, token, files, logo=None, payload_style='brackets'):
     """Build the ``files=`` argument of :func:`requests.post`.
 
-    :param payload: dict with the ``customer`` / ``inquiry`` / ``engineer`` blocks
+    :param payload: dict of blocks to send (``customer``, ``inquiry``,
+                    ``engineer``, ``user``, ...); every key becomes a
+                    top-level field of the multipart body
     :param token:   signed user token, sent as the ``token`` form field
     :param files:   list of ``(filename, content_bytes, mimetype)`` tuples,
                     sent as repeated ``files[]`` parts
@@ -222,15 +254,14 @@ def build_multipart_parts(payload, token, files, logo=None, payload_style='brack
     """
     parts = [('token', (None, token))]
 
-    if payload_style == 'json':
-        for key in ('customer', 'inquiry', 'engineer'):
+    for key, block in payload.items():
+        if payload_style == 'json':
             parts.append((
                 key,
-                (None, json.dumps(payload[key], ensure_ascii=False), 'application/json'),
+                (None, json.dumps(block, ensure_ascii=False), 'application/json'),
             ))
-    else:
-        for key in ('customer', 'inquiry', 'engineer'):
-            for name, value in flatten_for_multipart(payload[key], key):
+        else:
+            for name, value in flatten_for_multipart(block, key):
                 parts.append((name, (None, value)))
 
     if logo:

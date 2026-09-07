@@ -21,6 +21,8 @@
                         <field name="ps_connector_payload_style"/>
                         <field name="ps_connector_default_version"/>
                         <field name="ps_connector_default_currency"/>
+                        <field name="ps_connector_default_role"/>
+                        <field name="ps_connector_user_block_key"/>
                         <field name="ps_connector_strict_validation"/>
                         <field name="ps_connector_open_panel_url"/>
                     </group>

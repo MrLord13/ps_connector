@@ -15,6 +15,7 @@ published specification (`Fields.ods`):
 | `persons[]` | name, family, mobile, fax, ext, position, title (`Mr`/`Mrs`/`Miss`/`Ms`) |
 | `inquiry` | projectName, projectDescription, refNumber, version, `fileNames[]`, inquiryText, inquiryDate, currency, endUser, projectLocation |
 | `engineer` | fullName, avatarName, phone, email |
+| `user` | fullName, email, role of the **logged in** Odoo user — what the service uses to authorise the caller |
 | `files[]` | every attachment of the opportunity + the engineer avatar |
 | `token` | signed token identifying the Odoo user (also sent as `Authorization: Bearer`) |
 
@@ -42,6 +43,8 @@ Connector** — nothing is hard-coded.
 | `inquiry.refNumber` / `version` / `inquiryText` / `inquiryDate` / `currency` / `endUser` / `projectLocation` | **Product Selector** tab on the opportunity |
 | `inquiry.fileNames[]` | names of the sent files |
 | `engineer.*` | the user selected in **Engineer** (defaults to the current user) |
+| `user.fullName` / `email` | name and email of the logged in user (`env.user`) |
+| `user.role` | **Product Selector** tab on the user form (`ps_role`), falling back to the default role in the settings |
 | `files[]` | `ps_attachment_ids`, or every attachment of the opportunity |
 
 Values longer than the documented maximum are truncated rather than rejected.
@@ -54,6 +57,20 @@ what is missing (this can be turned off with *Block Incomplete Inquiries*).
   `persons[].mobile` is filled from `phone`.
 - `res.partner.title` no longer exists either, and the API only accepts
   `Mr`/`Mrs`/`Miss`/`Ms`, so the module ships its own `ps_title` selection.
+
+### Roles
+
+`user.role` is a `res.users` selection whose technical value and label are
+identical, so the string reaches the service exactly as written:
+
+`Sales Engineer 1` · `Sales Manager` · `Sales Secretary` ·
+`Commercial Manager` · `Production Manager` · `Warehouse Officer`
+
+Set it per user under **Settings > Users > (user) > Product Selector**. Users
+without a role fall back to *Default User Role* from the settings. The same
+identity is also embedded in the signed token and returned by
+`/ps_connector/api/validate_token`, so the service can authorise from the
+token alone if it prefers.
 
 ## Install
 
@@ -73,6 +90,8 @@ what is missing (this can be turned off with *Block Incomplete Inquiries*).
 | Shared Secret / Token Validity | Signing key and lifetime of the user token |
 | Nested Object Encoding | `brackets` (PHP/Laravel style, default) or `json` strings |
 | Default Inquiry Version / Currency | Defaults used on new opportunities |
+| Default User Role | Role used for users with no role set |
+| User Block Name | Name of the field carrying the user identity (`user` by default) |
 | Block Incomplete Inquiries | Refuse to send when a required field is empty |
 | Open Panel After Sending | Open `data.url` in a new tab on success |
 

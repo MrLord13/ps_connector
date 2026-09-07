@@ -19,8 +19,9 @@ then, in another shell::
 It runs two cases:
 
 1. a complete inquiry, which must be accepted (``ok: true`` + panel URL);
-2. an inquiry with deliberate mistakes, which must be rejected with a list
-   of problems — this proves the validation really runs.
+2. an inquiry with deliberate mistakes — including an unknown user role —
+   which must be rejected with a list of problems, proving the validation
+   really runs.
 """
 
 import base64
@@ -105,6 +106,13 @@ def valid_payload():
             'phone': '+989121234567',
             'email': 'alireza@erpishro.com',
         },
+        # Identity of the logged in Odoo user, used by the service to
+        # authorise the caller.
+        'user': {
+            'fullName': 'AliReza Nemati',
+            'email': 'alireza@erpishro.com',
+            'role': 'Sales Manager',
+        },
     }
 
 
@@ -116,6 +124,7 @@ def broken_payload():
     payload['inquiry']['currency'] = 'RIAL'                # outside the enum
     payload['inquiry']['version'] = 'v' * 25               # over 20 chars
     payload['inquiry']['inquiryDate'] = '02/09/2026'       # wrong date format
+    payload['user']['role'] = 'Sales Engineer'             # outside the role enum
     return payload
 
 
@@ -157,12 +166,12 @@ def main():
         print('RESULT: FAIL')
 
     status, body, count = send(broken_payload(), files, TINY_PNG)
-    show('CASE 2 — inquiry with 6 deliberate mistakes (expected: rejected)', status, body, count)
+    show('CASE 2 — inquiry with 7 deliberate mistakes (expected: rejected)', status, body, count)
     problems = ((body.get('error') or {}).get('problems')) or []
-    if status == 422 and body.get('ok') is False and len(problems) >= 6:
+    if status == 422 and body.get('ok') is False and len(problems) >= 7:
         print(f'RESULT: PASS — the service caught {len(problems)} problem(s).')
     else:
-        failures.append('case 2 should have been rejected with at least 6 problems')
+        failures.append('case 2 should have been rejected with at least 7 problems')
         print('RESULT: FAIL')
 
     print('\n' + '=' * 60)

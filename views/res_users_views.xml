@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_users_view_form_ps_connector" model="ir.ui.view">
+        <field name="name">res.users.form.ps.connector</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Product Selector" name="ps_connector">
+                    <group>
+                        <group string="Identity Sent to Product Selector">
+                            <field name="ps_role"/>
+                        </group>
+                    </group>
+                    <div class="text-muted">
+                        The full name and the email address of this user are sent together
+                        with this role, so the Product Selector service can authorise the
+                        person who triggered the action.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
