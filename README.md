@@ -81,6 +81,27 @@ token alone if it prefers.
    If it is already installed, use **Upgrade**.
 3. Configure it under **Settings > Product Selector Connector**.
 
+## Checking what is sent
+
+The **Check Data to Send** button on the opportunity opens a preview of the
+exact request: every field with its value, the files, the target URL and the
+encoding. Required values that are still empty are marked `!!`, so it is
+clear which Odoo record has to be completed. The inquiry can be sent straight
+from the preview.
+
+When the remote service rejects a request, the error shows the service's own
+message and problem list, and the full answer plus the names of the fields
+that were sent are written to the Odoo log.
+
+### Where to fill the contact person fields
+
+`customer.persons[]` is built from the contacts of the customer company. The
+title, extension and fax of each person are on the contact itself — they were
+added to the contact dialog that opens from the **Contacts** tab of a company,
+to the quick-create dialog, and to the **Product Selector** page of the full
+contact form. `mobile` comes from the contact's phone and `position` from its
+job position, both standard Odoo fields.
+
 ## Settings
 
 | Setting | Meaning |

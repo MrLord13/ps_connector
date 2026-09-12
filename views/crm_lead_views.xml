@@ -13,6 +13,11 @@
                         class="btn-secondary"
                         invisible="type != 'opportunity'"
                         confirm="Send this opportunity to the Product Selector service?"/>
+                <button name="action_preview_ps_payload"
+                        type="object"
+                        string="Check Data to Send"
+                        class="btn-secondary"
+                        invisible="type != 'opportunity'"/>
                 <button name="action_open_ps_panel"
                         type="object"
                         string="Open Product Selector Panel"

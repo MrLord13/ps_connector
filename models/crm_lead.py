@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import json
 import logging
 
 import requests
@@ -400,6 +401,130 @@ class CrmLead(models.Model):
         return problems
 
     # ------------------------------------------------------------------
+    # Preview
+    # ------------------------------------------------------------------
+    def _ps_build_payload(self):
+        """Build the payload and the file list without sending anything."""
+        self.ensure_one()
+        engineer_user = self.ps_engineer_user_id or self.env.user
+        attachments = self._ps_get_attachments()
+        file_names = [attachment.name for attachment in attachments]
+
+        avatar_name = self._ps_engineer_avatar_name(engineer_user)
+        engineer_avatar = engineer_user.partner_id.image_1920
+        if engineer_avatar:
+            engineer_avatar = base64.b64decode(engineer_avatar)
+            file_names.append(avatar_name)
+
+        payload = {
+            'customer': self._ps_prepare_customer(),
+            'inquiry': self._ps_prepare_inquiry(file_names),
+            'engineer': self._ps_prepare_engineer(engineer_user),
+            'user': self._ps_prepare_user(self.env.user),
+        }
+        return payload, attachments, engineer_avatar, avatar_name
+
+    def _ps_payload_report(self, payload, attachments, engineer_avatar, avatar_name):
+        """Human readable dump of every value that goes on the wire.
+
+        Required values that are still empty are flagged, so it is obvious
+        which Odoo record needs to be completed rather than having to read the
+        remote service's error message.
+        """
+        self.ensure_one()
+        required = {
+            'customer': ['company', 'email', 'phone', 'fax', 'address',
+                         'county', 'state', 'city'],
+            'person': ['name', 'family', 'mobile', 'position', 'title'],
+            'inquiry': ['projectName', 'refNumber', 'version', 'inquiryText',
+                        'inquiryDate', 'currency', 'endUser', 'projectLocation'],
+            'engineer': ['fullName', 'avatarName', 'phone', 'email'],
+            'user': ['fullName', 'email', 'role'],
+        }
+
+        lines = []
+
+        def dump(block_name, block, required_keys, prefix=None):
+            prefix = prefix or block_name
+            for key, value in block.items():
+                if key == 'persons':
+                    continue
+                flag = '  ' if (value or key not in required_keys) else '!!'
+                shown = value if value not in ('', None, False) else '(empty)'
+                if isinstance(shown, list):
+                    shown = ', '.join(str(item) for item in shown) or '(empty)'
+                lines.append(f'{flag} {prefix}[{key}]'.ljust(42) + f'= {shown}')
+
+        lines.append('--- customer ---')
+        dump('customer', payload['customer'], required['customer'])
+        logo = self._ps_get_customer_logo()
+        lines.append(('   customer[logo]' if logo else '!! customer[logo]').ljust(42)
+                     + ('= <image attached>' if logo else '= (empty)'))
+
+        for index, person in enumerate(payload['customer'].get('persons') or []):
+            lines.append(f'--- customer.persons[{index}] ---')
+            dump('person', person, required['person'], prefix=f'customer[persons][{index}]')
+        if not payload['customer'].get('persons'):
+            lines.append('!! customer[persons]                      = (empty)')
+
+        lines.append('--- inquiry ---')
+        dump('inquiry', payload['inquiry'], required['inquiry'])
+        lines.append('--- engineer ---')
+        dump('engineer', payload['engineer'], required['engineer'])
+        lines.append('--- user (logged in) ---')
+        dump('user', payload['user'], required['user'])
+
+        lines.append('--- files ---')
+        if not attachments and not engineer_avatar:
+            lines.append('   (no file attached to this opportunity)')
+        for attachment in attachments:
+            lines.append(f'   files[] = {attachment.name} '
+                         f'({attachment.mimetype or "?"}, {attachment.file_size} bytes)')
+        if engineer_avatar:
+            lines.append(f'   files[] = {avatar_name} (engineer avatar)')
+
+        lines.append('')
+        lines.append('Lines marked !! are required by the service and still empty.')
+        return '\n'.join(lines)
+
+    def action_preview_ps_payload(self):
+        """Show exactly what would be sent, without sending it."""
+        self.ensure_one()
+        settings = self._ps_get_settings()
+        payload, attachments, engineer_avatar, avatar_name = self._ps_build_payload()
+        problems = self._ps_validate_payload(payload)
+
+        try:
+            port = int(settings['port'] or 0)
+        except (TypeError, ValueError):
+            port = 0
+        port_part = f':{port}' if port > 0 else ''
+        url = (f"{settings['protocol']}://{settings['host'] or '(host not configured)'}"
+               f"{port_part}{settings['endpoint']}")
+
+        report = self._ps_payload_report(payload, attachments, engineer_avatar, avatar_name)
+        if problems:
+            report += '\n\n' + '\n'.join(' - %s' % problem for problem in problems)
+
+        preview = self.env['ps.connector.preview'].create({
+            'lead_id': self.id,
+            'target_url': url,
+            'encoding': ('bracket notation, e.g. customer[persons][0][name]'
+                         if settings['payload_style'] != 'json'
+                         else 'JSON strings, e.g. customer={...}'),
+            'problem_count': len(problems),
+            'report': report,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'ps.connector.preview',
+            'res_id': preview.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'name': _('What will be sent to the Product Selector'),
+        }
+
+    # ------------------------------------------------------------------
     # Request
     # ------------------------------------------------------------------
     def _ps_get_settings(self):
@@ -451,22 +576,7 @@ class CrmLead(models.Model):
                 'Go to Settings > Product Selector Connector and set the shared secret.'
             ))
 
-        engineer_user = self.ps_engineer_user_id or self.env.user
-        attachments = self._ps_get_attachments()
-        file_names = [attachment.name for attachment in attachments]
-
-        avatar_name = self._ps_engineer_avatar_name(engineer_user)
-        engineer_avatar = engineer_user.partner_id.image_1920
-        if engineer_avatar:
-            engineer_avatar = base64.b64decode(engineer_avatar)
-            file_names.append(avatar_name)
-
-        payload = {
-            'customer': self._ps_prepare_customer(),
-            'inquiry': self._ps_prepare_inquiry(file_names),
-            'engineer': self._ps_prepare_engineer(engineer_user),
-            'user': self._ps_prepare_user(self.env.user),
-        }
+        payload, attachments, engineer_avatar, avatar_name = self._ps_build_payload()
 
         problems = self._ps_validate_payload(payload)
         if problems:
@@ -525,12 +635,30 @@ class CrmLead(models.Model):
             result = {}
 
         if not response.ok or not result.get('ok'):
-            error = result.get('message') or result.get('error') or response.text[:500]
             code = result.get('code') or response.status_code
+            message = result.get('message') or ''
+            error = result.get('error')
+            if isinstance(error, dict) and isinstance(error.get('problems'), list):
+                detail = '\n'.join(' - %s' % problem for problem in error['problems'])
+            elif error:
+                detail = json.dumps(error, ensure_ascii=False, indent=2)
+            else:
+                detail = response.text[:2000]
+
+            # The full answer is logged as well, so the exact wording of the
+            # remote error can be forwarded to whoever maintains the service.
+            _logger.error(
+                'ps_connector: lead %s rejected by %s (HTTP %s)\nsent fields: %s\nanswer: %s',
+                self.id, url, response.status_code,
+                ', '.join(sorted({name for name, _part in parts})),
+                response.text[:4000],
+            )
             raise UserError(_(
                 'The Product Selector service rejected the request '
-                '(code %(code)s):\n\n%(error)s',
-                code=code, error=error,
+                '(code %(code)s).\n\n%(message)s\n\n%(detail)s\n\n'
+                'Use "Check Data to Send" on this opportunity to see every value '
+                'Odoo puts in the request.',
+                code=code, message=message, detail=detail,
             ))
 
         data = result.get('data') or {}

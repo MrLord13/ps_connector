@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- Full contact form: a dedicated page, plus the fax next to the phone
+         so the company fax is where people look for it. -->
     <record id="res_partner_view_form_ps_connector" model="ir.ui.view">
         <field name="name">res.partner.form.ps.connector</field>
         <field name="model">res.partner</field>
@@ -8,14 +11,58 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Product Selector" name="ps_connector">
                     <group>
-                        <group string="Contact Details Sent to Product Selector">
-                            <field name="ps_title"/>
-                            <field name="ps_ext"/>
+                        <group string="Sent to the Product Selector Service">
+                            <field name="ps_title" invisible="is_company"/>
+                            <field name="ps_ext" invisible="is_company"/>
                             <field name="ps_fax"/>
                         </group>
                     </group>
+                    <div class="text-muted">
+                        For a company these feed <code>customer.fax</code>; for a person they
+                        feed <code>customer.persons[].title</code>, <code>ext</code> and
+                        <code>fax</code>. The service requires the title and the job position
+                        for every contact person.
+                    </div>
                 </page>
             </xpath>
         </field>
     </record>
+
+    <!-- Contact persons opened from the "Contacts" tab of a company open in a
+         dialog that only carries name / email / phone / job position, so the
+         Product Selector fields are added to that dialog as well. Without this
+         there is no way to enter the title, the extension or the fax of a
+         contact person, and the service rejects the inquiry. -->
+    <record id="res_partner_view_form_ps_connector_child" model="ir.ui.view">
+        <field name="name">res.partner.form.ps.connector.child</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='child_ids']/form//field[@name='function']" position="after">
+                <field name="ps_title" string="Title"
+                       invisible="is_company or type != 'contact'"/>
+                <field name="ps_ext" string="Ext."
+                       placeholder="Extension"
+                       invisible="is_company or type != 'contact'"/>
+                <field name="ps_fax" string="Fax"
+                       placeholder="Fax"
+                       invisible="type != 'contact'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Quick-create dialog used when a contact is created on the fly. -->
+    <record id="res_partner_view_simple_form_ps_connector" model="ir.ui.view">
+        <field name="name">res.partner.simple.form.ps.connector</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_simple_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='phone']" position="after">
+                <field name="ps_title" invisible="is_company"/>
+                <field name="ps_ext" invisible="is_company"/>
+                <field name="ps_fax"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
