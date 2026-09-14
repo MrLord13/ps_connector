@@ -96,16 +96,16 @@ PAYLOAD_STYLE=json python3 selftest.py    # test the JSON-string encoding
 It runs two cases:
 
 1. a complete inquiry — must be **accepted** with a `uuid` and a panel URL;
-2. an inquiry with seven deliberate mistakes (bad email, empty required fax,
+2. an inquiry with eight deliberate mistakes (bad email, empty required fax,
    title outside the enum, currency outside the enum, over-long version,
-   wrong date format, unknown user role) — must be **rejected** with those
-   seven problems listed.
+   wrong date format, unknown user role, empty contact person email) — must
+   be **rejected** with those eight problems listed.
 
 Expected output:
 
 ```
 RESULT: PASS — the service accepted the inquiry and returned a panel URL.
-RESULT: PASS — the service caught 7 problem(s).
+RESULT: PASS — the service caught 8 problem(s).
 SELF TEST PASSED — the module encoder and the test service agree.
 ```
 
@@ -127,11 +127,12 @@ customer[email]                  = info@parsjahd.example.com
 customer[phone]                  = +982112345678
 customer[fax]                    = +982112345679
 customer[address]                = No. 12, Valiasr Ave., 1966733561
-customer[county]                 = Iran
+customer[country]                = Iran
 customer[state]                  = Tehran
 customer[city]                   = Tehran
 customer[persons][0][name]       = AliReza
 customer[persons][0][family]     = Nemati
+customer[persons][0][email]      = a.nemati@parsjahd.example.com
 customer[persons][0][mobile]     = +989121234567
 customer[persons][0][fax]        = +982112345679
 customer[persons][0][ext]        = 210

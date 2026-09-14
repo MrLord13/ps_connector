@@ -11,8 +11,8 @@ published specification (`Fields.ods`):
 
 | Part | Content |
 |---|---|
-| `customer` | company, logo (file), email, phone, fax, address, county, state, city, `persons[]` |
-| `persons[]` | name, family, mobile, fax, ext, position, title (`Mr`/`Mrs`/`Miss`/`Ms`) |
+| `customer` | company, logo (file), email, phone, fax, address, country, state, city, `persons[]` |
+| `persons[]` | name, family, email, mobile, fax, ext, position, title (`Mr`/`Mrs`/`Miss`/`Ms`) |
 | `inquiry` | projectName, projectDescription, refNumber, version, `fileNames[]`, inquiryText, inquiryDate, currency, endUser, projectLocation |
 | `engineer` | fullName, avatarName, phone, email |
 | `user` | fullName, email, role of the **logged in** Odoo user — what the service uses to authorise the caller |
@@ -35,8 +35,9 @@ Connector** — nothing is hard-coded.
 | `customer.email` / `phone` | `email_from` / `phone` (falling back to the partner) |
 | `customer.fax` | **Product Selector** tab > Company Fax (`ps_company_fax`) |
 | `customer.address` | street + street2 + zip |
-| `customer.county` / `state` / `city` | `country_id.name` / `state_id.name` / `city` |
+| `customer.country` / `state` / `city` | `country_id.name` / `state_id.name` / `city` |
 | `customer.persons[]` | contacts of the customer company (`child_ids`), else the lead's own contact |
+| `persons[].email` | contact email, falling back to the company email, then the opportunity email |
 | `persons[].position` | partner `function` (Job Position) |
 | `persons[].title` / `fax` / `ext` | **Product Selector** tab on the contact form (`ps_title`, `ps_fax`, `ps_ext`) |
 | `inquiry.projectName` / `projectDescription` | `name` / `description` (HTML converted to plain text) |

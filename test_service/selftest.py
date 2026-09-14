@@ -64,13 +64,14 @@ def valid_payload():
             'phone': '+982112345678',
             'fax': '+982112345679',
             'address': 'No. 12, Valiasr Ave., 1966733561',
-            'county': 'Iran',
+            'country': 'Iran',
             'state': 'Tehran',
             'city': 'Tehran',
             'persons': [
                 {
                     'name': 'AliReza',
                     'family': 'Nemati',
+                    'email': 'a.nemati@parsjahd.example.com',
                     'mobile': '+989121234567',
                     'fax': '+982112345679',
                     'ext': '210',
@@ -80,6 +81,7 @@ def valid_payload():
                 {
                     'name': 'Sara',
                     'family': 'Ahmadi',
+                    'email': 's.ahmadi@parsjahd.example.com',
                     'mobile': '+989121234568',
                     'fax': '',
                     'ext': '',
@@ -125,6 +127,7 @@ def broken_payload():
     payload['inquiry']['version'] = 'v' * 25               # over 20 chars
     payload['inquiry']['inquiryDate'] = '02/09/2026'       # wrong date format
     payload['user']['role'] = 'Sales Engineer'             # outside the role enum
+    payload['customer']['persons'][0]['email'] = ''        # required, empty
     return payload
 
 
@@ -166,12 +169,12 @@ def main():
         print('RESULT: FAIL')
 
     status, body, count = send(broken_payload(), files, TINY_PNG)
-    show('CASE 2 — inquiry with 7 deliberate mistakes (expected: rejected)', status, body, count)
+    show('CASE 2 — inquiry with 8 deliberate mistakes (expected: rejected)', status, body, count)
     problems = ((body.get('error') or {}).get('problems')) or []
-    if status == 422 and body.get('ok') is False and len(problems) >= 7:
+    if status == 422 and body.get('ok') is False and len(problems) >= 8:
         print(f'RESULT: PASS — the service caught {len(problems)} problem(s).')
     else:
-        failures.append('case 2 should have been rejected with at least 7 problems')
+        failures.append('case 2 should have been rejected with at least 8 problems')
         print('RESULT: FAIL')
 
     print('\n' + '=' * 60)

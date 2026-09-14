@@ -180,9 +180,16 @@ class CrmLead(models.Model):
 
     def _ps_prepare_person(self, partner):
         first_name, family_name = split_person_name(partner.name)
+        company_partner = self._ps_get_company_partner()
         return {
             'name': clip(first_name, 'person.name'),
             'family': clip(family_name, 'person.family'),
+            # Required by the service. When the contact has no address of its
+            # own, the one of the company it belongs to is used.
+            'email': clip(
+                partner.email or company_partner.email or self.email_from,
+                'person.email',
+            ),
             'mobile': clip(partner.phone, 'person.mobile'),
             'fax': clip(partner.ps_fax, 'person.fax'),
             'ext': clip(partner.ps_ext, 'person.ext'),
@@ -204,6 +211,7 @@ class CrmLead(models.Model):
         return [{
             'name': clip(first_name, 'person.name'),
             'family': clip(family_name, 'person.family'),
+            'email': clip(self.email_from or self.partner_id.email, 'person.email'),
             'mobile': clip(self.phone, 'person.mobile'),
             'fax': clip(self.ps_company_fax, 'person.fax'),
             'ext': '',
@@ -231,11 +239,9 @@ class CrmLead(models.Model):
             'phone': clip(self.phone or company_partner.phone, 'customer.phone'),
             'fax': clip(self.ps_company_fax or company_partner.ps_fax, 'customer.fax'),
             'address': clip(address, 'customer.address'),
-            # The specification spells this key "county" while describing it
-            # as the country name; the key is sent exactly as specified.
-            'county': clip(
+            'country': clip(
                 (self.country_id or company_partner.country_id).name,
-                'customer.county',
+                'customer.country',
             ),
             'state': clip(
                 (self.state_id or company_partner.state_id).name,
@@ -332,7 +338,7 @@ class CrmLead(models.Model):
             'phone': _('Customer > Phone'),
             'fax': _('Customer > Fax'),
             'address': _('Customer > Address (Street)'),
-            'county': _('Customer > Country'),
+            'country': _('Customer > Country'),
             'state': _('Customer > State'),
             'city': _('Customer > City'),
         }
@@ -358,6 +364,12 @@ class CrmLead(models.Model):
                 if not person.get(key):
                     problems.append(_('Contact Person #%(index)s > %(label)s',
                                       index=index, label=label))
+            if not person.get('email'):
+                problems.append(_('Contact Person #%s > Email', index))
+            elif not is_valid_email(person['email']):
+                problems.append(_(
+                    'Contact Person #%(index)s > Email (invalid format: %(email)s)',
+                    index=index, email=person['email']))
 
         required_inquiry = {
             'projectName': _('Inquiry > Project Name'),
@@ -434,8 +446,8 @@ class CrmLead(models.Model):
         self.ensure_one()
         required = {
             'customer': ['company', 'email', 'phone', 'fax', 'address',
-                         'county', 'state', 'city'],
-            'person': ['name', 'family', 'mobile', 'position', 'title'],
+                         'country', 'state', 'city'],
+            'person': ['name', 'family', 'email', 'mobile', 'position', 'title'],
             'inquiry': ['projectName', 'refNumber', 'version', 'inquiryText',
                         'inquiryDate', 'currency', 'endUser', 'projectLocation'],
             'engineer': ['fullName', 'avatarName', 'phone', 'email'],

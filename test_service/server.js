@@ -62,7 +62,7 @@ const CUSTOMER_SPEC = {
   phone: [true, 20, 'string'],
   fax: [true, 20, 'string'],
   address: [true, 256, 'string'],
-  county: [true, 100, 'string'],
+  country: [true, 100, 'string'],
   state: [true, 100, 'string'],
   city: [true, 100, 'string'],
 };
@@ -70,6 +70,7 @@ const CUSTOMER_SPEC = {
 const PERSON_SPEC = {
   name: [true, 256, 'string'],
   family: [true, 256, 'string'],
+  email: [true, 256, 'email'],
   mobile: [true, 15, 'string'],
   fax: [false, 15, 'string'],
   ext: [false, 10, 'string'],
