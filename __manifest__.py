@@ -11,8 +11,8 @@ service (``/api/odoo/inquiries/store`` by default) containing the four blocks
 of the published API specification:
 
 * ``customer`` - company name, logo, email, phone, fax, address, country,
-  state, city and the array of contact persons (name, family, mobile, fax,
-  ext, position, title).
+  state, city and the array of contact persons (name, family, email, mobile,
+  fax, ext, position, title).
 * ``inquiry``  - project name and description, reference number, version,
   file names, inquiry text, inquiry date, currency, end user and project
   location.
@@ -37,7 +37,7 @@ A Node.js test service is provided under test_service/ in the repository; it
 parses the multipart body, validates every field against the specification
 and answers with the documented response shape.
 """,
-    'version': '19.0.2.2.0',
+    'version': '19.0.2.3.0',
     'category': 'ERPishro Modules',
     'author': 'AliReza Nemati',
     'depends': ['crm'],
