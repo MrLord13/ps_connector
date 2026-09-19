@@ -37,7 +37,7 @@ A Node.js test service is provided under test_service/ in the repository; it
 parses the multipart body, validates every field against the specification
 and answers with the documented response shape.
 """,
-    'version': '19.0.2.3.0',
+    'version': '19.0.2.4.0',
     'category': 'ERPishro Modules',
     'author': 'AliReza Nemati',
     'depends': ['crm'],
