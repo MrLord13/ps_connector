@@ -12,6 +12,9 @@
                 <page string="Product Selector" name="ps_connector">
                     <group>
                         <group string="Sent to the Product Selector Service">
+                            <field name="ps_name_en" placeholder="English spelling of the name"/>
+                            <field name="ps_function_en" invisible="is_company"
+                                   placeholder="e.g. Technical Manager"/>
                             <field name="ps_title" invisible="is_company"/>
                             <field name="ps_ext" invisible="is_company"/>
                             <field name="ps_fax"/>
@@ -39,6 +42,12 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='child_ids']/form//field[@name='function']" position="after">
+                <field name="ps_name_en" string="Name (English)"
+                       placeholder="English spelling of the name"
+                       invisible="type != 'contact'"/>
+                <field name="ps_function_en" string="Job Position (English)"
+                       placeholder="e.g. Technical Manager"
+                       invisible="is_company or type != 'contact'"/>
                 <field name="ps_title" string="Title"
                        invisible="is_company or type != 'contact'"/>
                 <field name="ps_ext" string="Ext."
@@ -58,6 +67,8 @@
         <field name="inherit_id" ref="base.view_partner_simple_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='phone']" position="after">
+                <field name="ps_name_en" placeholder="English spelling of the name"/>
+                <field name="ps_function_en" invisible="is_company"/>
                 <field name="ps_title" invisible="is_company"/>
                 <field name="ps_ext" invisible="is_company"/>
                 <field name="ps_fax"/>

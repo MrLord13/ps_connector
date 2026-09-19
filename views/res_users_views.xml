@@ -10,6 +10,8 @@
                     <group>
                         <group string="Identity Sent to Product Selector">
                             <field name="ps_role"/>
+                            <field name="ps_name_en"
+                                   placeholder="English spelling of the name"/>
                         </group>
                     </group>
                     <div class="text-muted">

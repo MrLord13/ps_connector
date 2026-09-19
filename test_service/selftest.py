@@ -21,7 +21,10 @@ It runs two cases:
 1. a complete inquiry, which must be accepted (``ok: true`` + panel URL);
 2. an inquiry with deliberate mistakes — including an unknown user role —
    which must be rejected with a list of problems, proving the validation
-   really runs.
+   really runs;
+3. the English guard: the fields that must reach the service in English are
+   recognised as Persian when they are, and the English override wins over
+   the Odoo value.
 """
 
 import base64
@@ -33,7 +36,12 @@ import requests
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'models'))
 
-from ps_connector_utils import build_multipart_parts  # noqa: E402
+from ps_connector_utils import (  # noqa: E402
+    PS_LATIN_PATHS,
+    build_multipart_parts,
+    english_value,
+    has_non_latin,
+)
 
 BASE_URL = (sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:3000').rstrip('/')
 ENDPOINT = os.environ.get('ENDPOINT', '/api/odoo/inquiries/store')
@@ -175,6 +183,47 @@ def main():
         print(f'RESULT: PASS — the service caught {len(problems)} problem(s).')
     else:
         failures.append('case 2 should have been rejected with at least 8 problems')
+        print('RESULT: FAIL')
+
+    # --- CASE 3: the English guard, checked locally -----------------------
+    print('\n--- CASE 3 — English guard (expected: Persian detected) ---')
+    checks = [
+        ('customer.company', 'پارس جهد', True),
+        ('customer.company', 'Pars Jahd Service', False),
+        ('person.name', 'علیرضا', True),
+        ('person.name', 'AliReza', False),
+        ('inquiry.projectName', 'ایستگاه تقویت فشار', True),
+        ('engineer.fullName', 'Zurich AG', False),
+    ]
+    guard_ok = True
+    for path, value, expected in checks:
+        in_scope = path in PS_LATIN_PATHS
+        detected = in_scope and has_non_latin(value)
+        mark = 'OK ' if detected == expected else 'BAD'
+        if detected != expected:
+            guard_ok = False
+        print(f'  {mark} {path:<28} {value!r:<28} persian={detected}')
+
+    # Fields that never need a translation must stay out of the guard.
+    for path in ('customer.email', 'customer.phone', 'customer.fax',
+                 'person.mobile', 'person.ext', 'inquiry.refNumber',
+                 'inquiry.version', 'inquiry.currency', 'inquiry.inquiryDate'):
+        if path in PS_LATIN_PATHS:
+            guard_ok = False
+            print(f'  BAD {path} should not require English')
+
+    # The English override must win over the Odoo value.
+    if english_value('Pars Jahd Service', 'پارس جهد') != 'Pars Jahd Service':
+        guard_ok = False
+        print('  BAD the English override did not win over the Odoo value')
+    if english_value('   ', 'Pars Jahd Service') != 'Pars Jahd Service':
+        guard_ok = False
+        print('  BAD a blank override should fall back to the Odoo value')
+
+    if guard_ok:
+        print('RESULT: PASS — Persian text is detected only where English is required.')
+    else:
+        failures.append('case 3: the English guard misclassified a field')
         print('RESULT: FAIL')
 
     print('\n' + '=' * 60)

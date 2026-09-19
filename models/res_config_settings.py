@@ -92,6 +92,15 @@ class ResConfigSettings(models.TransientModel):
              '(full name, email, role). Change it if the Product Selector service '
              'expects another name, e.g. "auth" or "odooUser".',
     )
+    ps_connector_require_latin = fields.Boolean(
+        string='Require English Text',
+        config_parameter='ps_connector.require_latin',
+        default=True,
+        help='The Product Selector service is an English application. When enabled, '
+             'Odoo refuses to send names, addresses and project texts that are still '
+             'written in Persian, and says which English field has to be filled. '
+             'Emails, phone and fax numbers are never checked.',
+    )
     ps_connector_strict_validation = fields.Boolean(
         string='Block Incomplete Inquiries',
         config_parameter='ps_connector.strict_validation',

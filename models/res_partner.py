@@ -22,6 +22,19 @@ class ResPartner(models.Model):
         size=20,
         help='Fax number sent to the Product Selector service.',
     )
+    ps_name_en = fields.Char(
+        string='Name (English)',
+        size=256,
+        help='English spelling of this name. The Product Selector service is an '
+             'English application, so this value is sent instead of the Odoo name '
+             'when it is filled. For a person it feeds the first and the last name, '
+             'for a company it feeds the company name.',
+    )
+    ps_function_en = fields.Char(
+        string='Job Position (English)',
+        size=100,
+        help='English job position sent as customer.persons[].position.',
+    )
     ps_ext = fields.Char(
         string='Extension',
         size=10,

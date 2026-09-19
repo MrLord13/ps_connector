@@ -41,6 +41,27 @@
                             <field name="ps_engineer_user_id"/>
                         </group>
                     </group>
+                    <group string="English Values Sent to the Service"
+                           name="ps_english">
+                        <group>
+                            <field name="ps_company_en" placeholder="e.g. Pars Jahd Service"/>
+                            <field name="ps_address_en" placeholder="e.g. No. 12, Valiasr Ave."/>
+                            <field name="ps_city_en" placeholder="e.g. Tehran"/>
+                            <field name="ps_state_en" placeholder="e.g. Tehran"/>
+                        </group>
+                        <group>
+                            <field name="ps_project_name_en"/>
+                            <field name="ps_description_en"/>
+                        </group>
+                        <div colspan="2" class="text-muted">
+                            The Product Selector service is an English application. Fill these
+                            when the Odoo values are in Persian; leave them empty to send the
+                            Odoo values as they are. The country is translated automatically,
+                            and emails, phone numbers, fax numbers and dates never need a
+                            translation. Names and job positions of the contact persons are on
+                            the contact form itself.
+                        </div>
+                    </group>
                     <group string="Inquiry Text">
                         <field name="ps_inquiry_text" nolabel="1"
                                placeholder="Internal description about this inquiry..."/>

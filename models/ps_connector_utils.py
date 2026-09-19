@@ -80,6 +80,27 @@ PS_MAX_LENGTHS = {
 
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
+#: Field paths whose value must reach the service written in English. Anything
+#: not listed here (emails, phone and fax numbers, extensions, reference
+#: numbers, dates, enums) is script neutral and is sent as stored in Odoo.
+PS_LATIN_PATHS = {
+    'customer.company',
+    'customer.address',
+    'customer.country',
+    'customer.state',
+    'customer.city',
+    'person.name',
+    'person.family',
+    'person.position',
+    'inquiry.projectName',
+    'inquiry.projectDescription',
+    'inquiry.inquiryText',
+    'inquiry.endUser',
+    'inquiry.projectLocation',
+    'engineer.fullName',
+    'user.fullName',
+}
+
 
 # ---------------------------------------------------------------------------
 # Token helpers
@@ -186,6 +207,23 @@ def clip(value, path):
     if max_length and len(text) > max_length:
         text = text[:max_length]
     return text
+
+
+def has_non_latin(value):
+    """True when ``value`` holds a letter outside the Latin alphabet.
+
+    Persian, Arabic, Cyrillic and CJK letters all sit above Latin Extended-B
+    (U+024F), so anything alphabetic beyond that point means the text has not
+    been written in English. Digits, punctuation and Latin accents are fine.
+    """
+    return any(ord(char) > 0x024F and char.isalpha() for char in str(value or ''))
+
+
+def english_value(override, fallback):
+    """Return the explicit English value when it is filled, else the Odoo one."""
+    if isinstance(override, str):
+        override = override.strip()
+    return override or fallback
 
 
 def is_valid_email(value):

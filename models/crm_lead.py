@@ -11,10 +11,13 @@ from odoo.tools import html2plaintext
 
 from .ps_connector_utils import (
     PS_CURRENCIES,
+    PS_LATIN_PATHS,
     PS_ROLES,
     build_multipart_parts,
     clip,
+    english_value,
     generate_user_token,
+    has_non_latin,
     is_valid_email,
     split_person_name,
 )
@@ -76,6 +79,45 @@ class CrmLead(models.Model):
         compute='_compute_ps_project_location', store=True, readonly=False,
         help='inquiry.projectLocation',
     )
+    # ------------------------------------------------------------------
+    # English values. The Product Selector service is an English application,
+    # so the free text that Odoo may hold in Persian is overridden here. Only
+    # the fields that carry words need this; emails, phone and fax numbers,
+    # extensions, reference numbers and dates are sent as stored.
+    # ------------------------------------------------------------------
+    ps_company_en = fields.Char(
+        string='Company Name (English)',
+        size=256,
+        compute='_compute_ps_company_en', store=True, readonly=False,
+        help='Sent as customer.company. Filled from the customer English name '
+             'when there is one.',
+    )
+    ps_address_en = fields.Char(
+        string='Address (English)',
+        size=256,
+        help='Sent as customer.address instead of the street, street 2 and ZIP.',
+    )
+    ps_city_en = fields.Char(
+        string='City (English)',
+        size=100,
+        help='Sent as customer.city.',
+    )
+    ps_state_en = fields.Char(
+        string='State (English)',
+        size=100,
+        help='Sent as customer.state. Only needed when the state record itself '
+             'is not written in English.',
+    )
+    ps_project_name_en = fields.Char(
+        string='Project Name (English)',
+        size=255,
+        help='Sent as inquiry.projectName instead of the opportunity title.',
+    )
+    ps_description_en = fields.Text(
+        string='Project Description (English)',
+        help='Sent as inquiry.projectDescription instead of the internal notes.',
+    )
+
     ps_engineer_user_id = fields.Many2one(
         'res.users',
         string='Engineer',
@@ -123,6 +165,13 @@ class CrmLead(models.Model):
             if not lead.ps_company_fax:
                 partner = lead.partner_id.commercial_partner_id or lead.partner_id
                 lead.ps_company_fax = partner.ps_fax or False
+
+    @api.depends('partner_id')
+    def _compute_ps_company_en(self):
+        for lead in self:
+            if not lead.ps_company_en:
+                partner = lead.partner_id.commercial_partner_id or lead.partner_id
+                lead.ps_company_en = partner.ps_name_en or False
 
     @api.depends('name')
     def _compute_ps_ref_number(self):
@@ -179,7 +228,8 @@ class CrmLead(models.Model):
         return children or (company if not company.is_company else self.env['res.partner'])
 
     def _ps_prepare_person(self, partner):
-        first_name, family_name = split_person_name(partner.name)
+        first_name, family_name = split_person_name(
+            english_value(partner.ps_name_en, partner.name))
         company_partner = self._ps_get_company_partner()
         return {
             'name': clip(first_name, 'person.name'),
@@ -193,7 +243,10 @@ class CrmLead(models.Model):
             'mobile': clip(partner.phone, 'person.mobile'),
             'fax': clip(partner.ps_fax, 'person.fax'),
             'ext': clip(partner.ps_ext, 'person.ext'),
-            'position': clip(partner.function, 'person.position'),
+            'position': clip(
+                english_value(partner.ps_function_en, partner.function),
+                'person.position',
+            ),
             'title': partner.ps_title or 'Mr',
         }
 
@@ -206,7 +259,10 @@ class CrmLead(models.Model):
         if persons:
             return persons
 
-        fallback_name = self.contact_name or self.partner_name or self.name
+        fallback_name = (
+            self.partner_id.ps_name_en or self.contact_name
+            or self.ps_company_en or self.partner_name or self.name
+        )
         first_name, family_name = split_person_name(fallback_name)
         return [{
             'name': clip(first_name, 'person.name'),
@@ -228,35 +284,56 @@ class CrmLead(models.Model):
             self.street2 or company_partner.street2,
             self.zip or company_partner.zip,
         ]
-        address = ', '.join(part for part in address_parts if part)
+        address = english_value(
+            self.ps_address_en,
+            ', '.join(part for part in address_parts if part),
+        )
 
         return {
             'company': clip(
-                self.partner_name or company_partner.name or self.name,
+                english_value(
+                    self.ps_company_en or company_partner.ps_name_en,
+                    self.partner_name or company_partner.name or self.name,
+                ),
                 'customer.company',
             ),
             'email': clip(self.email_from or company_partner.email, 'customer.email'),
             'phone': clip(self.phone or company_partner.phone, 'customer.phone'),
             'fax': clip(self.ps_company_fax or company_partner.ps_fax, 'customer.fax'),
             'address': clip(address, 'customer.address'),
+            # Country names are translatable in Odoo, so the English one is
+            # read straight from the record instead of asking for it again.
             'country': clip(
-                (self.country_id or company_partner.country_id).name,
+                (self.country_id or company_partner.country_id)
+                .with_context(lang='en_US').name,
                 'customer.country',
             ),
             'state': clip(
-                (self.state_id or company_partner.state_id).name,
+                english_value(
+                    self.ps_state_en,
+                    (self.state_id or company_partner.state_id).name,
+                ),
                 'customer.state',
             ),
-            'city': clip(self.city or company_partner.city, 'customer.city'),
+            'city': clip(
+                english_value(self.ps_city_en, self.city or company_partner.city),
+                'customer.city',
+            ),
             'persons': self._ps_prepare_persons(),
         }
 
     def _ps_prepare_inquiry(self, file_names):
         self.ensure_one()
         return {
-            'projectName': clip(self.name, 'inquiry.projectName'),
+            'projectName': clip(
+                english_value(self.ps_project_name_en, self.name),
+                'inquiry.projectName',
+            ),
             'projectDescription': clip(
-                html2plaintext(self.description) if self.description else '',
+                english_value(
+                    self.ps_description_en,
+                    html2plaintext(self.description) if self.description else '',
+                ),
                 'inquiry.projectDescription',
             ),
             'refNumber': clip(self.ps_ref_number, 'inquiry.refNumber'),
@@ -276,7 +353,10 @@ class CrmLead(models.Model):
     def _ps_prepare_engineer(self, user):
         self.ensure_one()
         return {
-            'fullName': clip(user.name, 'engineer.fullName'),
+            'fullName': clip(
+                english_value(user.partner_id.ps_name_en, user.name),
+                'engineer.fullName',
+            ),
             'avatarName': self._ps_engineer_avatar_name(user),
             'phone': clip(user.partner_id.phone, 'engineer.phone'),
             'email': clip(user.email or user.login, 'engineer.email'),
@@ -292,7 +372,10 @@ class CrmLead(models.Model):
         self.ensure_one()
         identity = user._ps_identity()
         return {
-            'fullName': clip(identity['fullName'], 'user.fullName'),
+            'fullName': clip(
+                english_value(user.partner_id.ps_name_en, identity['fullName']),
+                'user.fullName',
+            ),
             'email': clip(identity['email'], 'user.email'),
             'role': identity['role'] or '',
         }
@@ -410,6 +493,59 @@ class CrmLead(models.Model):
                 'Odoo User > Product Selector Role ("%(role)s" is not one of: %(allowed)s)',
                 role=user['role'], allowed=', '.join(allowed_roles)))
 
+        problems.extend(self._ps_check_english(payload))
+
+        return problems
+
+    def _ps_check_english(self, payload):
+        """Report values that still carry non-Latin text.
+
+        The Product Selector service is an English application. Everything in
+        :data:`PS_LATIN_PATHS` has an English counterpart in Odoo, so anything
+        still written in Persian here means that counterpart was left empty.
+        """
+        if not self._ps_get_settings()['require_latin']:
+            return []
+
+        labels = {
+            'customer.company': _('Customer > Company Name (English)'),
+            'customer.address': _('Customer > Address (English)'),
+            'customer.country': _('Customer > Country'),
+            'customer.state': _('Customer > State (English)'),
+            'customer.city': _('Customer > City (English)'),
+            'inquiry.projectName': _('Inquiry > Project Name (English)'),
+            'inquiry.projectDescription': _('Inquiry > Project Description (English)'),
+            'inquiry.inquiryText': _('Inquiry > Inquiry Text'),
+            'inquiry.endUser': _('Inquiry > End User'),
+            'inquiry.projectLocation': _('Inquiry > Project Location'),
+            'engineer.fullName': _('Engineer > Full Name (English)'),
+            'user.fullName': _('Odoo User > Full Name (English)'),
+        }
+        person_labels = {
+            'name': _('First Name (English)'),
+            'family': _('Last Name (English)'),
+            'position': _('Job Position (English)'),
+        }
+
+        problems = []
+        for block_name in ('customer', 'inquiry', 'engineer', 'user'):
+            for key, value in (payload.get(block_name) or {}).items():
+                path = f'{block_name}.{key}'
+                if path in PS_LATIN_PATHS and has_non_latin(value):
+                    problems.append(_(
+                        '%(label)s is still written in Persian ("%(value)s") — '
+                        'fill the English field so the service receives English text.',
+                        label=labels.get(path, path), value=value,
+                    ))
+
+        for index, person in enumerate(payload['customer'].get('persons') or [], start=1):
+            for key, label in person_labels.items():
+                if f'person.{key}' in PS_LATIN_PATHS and has_non_latin(person.get(key)):
+                    problems.append(_(
+                        'Contact Person #%(index)s > %(label)s is still written in '
+                        'Persian ("%(value)s") — fill it on the contact form.',
+                        index=index, label=label, value=person.get(key),
+                    ))
         return problems
 
     # ------------------------------------------------------------------
@@ -462,6 +598,9 @@ class CrmLead(models.Model):
                 if key == 'persons':
                     continue
                 flag = '  ' if (value or key not in required_keys) else '!!'
+                if flag == '  ' and f'{block_name}.{key}' in PS_LATIN_PATHS \
+                        and has_non_latin(value):
+                    flag = 'fa'
                 shown = value if value not in ('', None, False) else '(empty)'
                 if isinstance(shown, list):
                     shown = ', '.join(str(item) for item in shown) or '(empty)'
@@ -497,6 +636,7 @@ class CrmLead(models.Model):
 
         lines.append('')
         lines.append('Lines marked !! are required by the service and still empty.')
+        lines.append('Lines marked fa are not written in English yet.')
         return '\n'.join(lines)
 
     def action_preview_ps_payload(self):
@@ -554,6 +694,7 @@ class CrmLead(models.Model):
             'strict': icp.get_param('ps_connector.strict_validation', 'True') not in ('False', 'false', '0', ''),
             'open_panel': icp.get_param('ps_connector.open_panel_url', 'True') not in ('False', 'false', '0', ''),
             'user_block_key': icp.get_param('ps_connector.user_block_key', 'user') or 'user',
+            'require_latin': icp.get_param('ps_connector.require_latin', 'True') not in ('False', 'false', '0', ''),
         }
 
     def _ps_collect_files(self, attachments, engineer_avatar, avatar_name):
