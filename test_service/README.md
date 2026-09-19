@@ -93,19 +93,24 @@ python3 selftest.py http://localhost:3000
 PAYLOAD_STYLE=json python3 selftest.py    # test the JSON-string encoding
 ```
 
-It runs two cases:
+It runs three cases:
 
 1. a complete inquiry — must be **accepted** with a `uuid` and a panel URL;
 2. an inquiry with eight deliberate mistakes (bad email, empty required fax,
    title outside the enum, currency outside the enum, over-long version,
    wrong date format, unknown user role, empty contact person email) — must
-   be **rejected** with those eight problems listed.
+   be **rejected** with those eight problems listed;
+3. the English guard: values that must reach the service in English are
+   recognised as Persian when they are, script-neutral fields (email, phone,
+   fax, reference, version, currency, date) are left alone, and an English
+   override wins over the Odoo value.
 
 Expected output:
 
 ```
 RESULT: PASS — the service accepted the inquiry and returned a panel URL.
 RESULT: PASS — the service caught 8 problem(s).
+RESULT: PASS — Persian text is detected only where English is required.
 SELF TEST PASSED — the module encoder and the test service agree.
 ```
 
