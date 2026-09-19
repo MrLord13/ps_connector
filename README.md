@@ -82,6 +82,33 @@ token alone if it prefers.
    If it is already installed, use **Upgrade**.
 3. Configure it under **Settings > Product Selector Connector**.
 
+## English values
+
+The Product Selector service is an English application while Odoo may hold
+Persian data, so every field that carries words has an English counterpart.
+Fields that are script neutral — emails, phone and fax numbers, extensions,
+reference numbers, versions, dates, currencies, titles and roles — are sent
+exactly as stored and need nothing extra.
+
+| Sent as | English source | Falls back to |
+|---|---|---|
+| `customer.company` | opportunity *Company Name (English)*, else the customer's *Name (English)* | `partner_name` |
+| `customer.address` | opportunity *Address (English)* | street + street2 + ZIP |
+| `customer.city` / `state` | opportunity *City / State (English)* | `city` / `state_id.name` |
+| `customer.country` | translated automatically — country names are translatable in Odoo | — |
+| `persons[].name` / `family` | contact *Name (English)* | contact name |
+| `persons[].position` | contact *Job Position (English)* | `function` |
+| `inquiry.projectName` | opportunity *Project Name (English)* | opportunity title |
+| `inquiry.projectDescription` | opportunity *Project Description (English)* | internal notes |
+| `inquiry.inquiryText` / `endUser` / `projectLocation` | typed directly in the Product Selector tab | — |
+| `engineer.fullName` / `user.fullName` | user *Name (English)* | user name |
+
+Leaving an English field empty is fine when the Odoo value is already in
+English — the fallback is used. When a value that must be English still
+contains Persian letters, the module refuses to send it and names the field to
+fill (*Require English Text* in the settings, on by default). The preview marks
+those lines `fa`.
+
 ## Checking what is sent
 
 The **Check Data to Send** button on the opportunity opens a preview of the
